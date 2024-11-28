@@ -1,111 +1,94 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-  <meta charset="utf-8">
-  <title>Lấy Code 2FA</title>
-  <link rel="icon" href="https://www.nguyenlieufb.xyz/assets/img/facebook.png" type="image/png">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://www.nguyenlieufb.xyz/assets/css/bootstrap.min.css" media="screen">
-  <link rel="stylesheet" href="https://www.nguyenlieufb.xyz/assets/css/custom.min.css">
-  <link rel="stylesheet" href="https://www.nguyenlieufb.xyz/assets/css/dataTables.bootstrap4.min.css">
-  <link href="https://www.nguyenlieufb.xyz/cdn.jsdelivr.net/npm/toastr.js/latest/css/toastr.min.css" rel="stylesheet" type="text/css" />
-  <link rel="stylesheet" href="https://www.nguyenlieufb.xyz/assets/css/app.min.css?1616081642">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/jquery.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/sweetalert2@10.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/cdn.jsdelivr.net/npm/toastr.js/latest/js/toastr.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/jquery.dataTables.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/dataTables.bootstrap4.min.js"></script>
-  <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/app.min.js?1616081642"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2FA Auth</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+  <style>
+    .row + .row { margin-top: 20px; }
+  </style>
 </head>
-
 <body>
-  <center><h3>Get Code 2FA</h3></center>
-  <div class="row pt-3">
-    <div class="col-md-8 mr-auto ml-auto">
-      <div class="card pt-4">
-        <div class="card-body py-4">
-          <div class="input-group mb-3">
-            <input class="form-control" type="text" id="secrect-key" placeholder="Nhập mã 2FA cần lấy code vào đây">
-            <div class="input-group-append">
-              <button type="button" class="btn btn-primary" id="get">GET</button>
+  <div class="container-fluid">
+    <header class="col-md-12">
+      <h3 class="text-center">2FA Authentication</h3>
+    </header>
+    <div class="row">
+      <div class="col-sm-2"></div>
+      <div class="col-sm-8">
+        <main>
+          <div class="row">
+            <h4><strong>* 2FA Secret</strong></h4>
+            <p>Nhập mã bí mật 2FA của bạn vào ô dưới đây. Hãy lưu trữ mã này an toàn.</p>
+            <textarea class="form-control" id="listToken" placeholder="BK5V TVQ7 D2RB..." rows="6"></textarea>
+          </div>
+          <div class="row">
+            <div class="text-left">
+              <button class="btn btn-primary" id="submit">Gửi</button>
             </div>
           </div>
-          <div class="form-group text-center">
-            <span class="has-text-grey is-size-7">Hết hạn sau: <span id="count-down">30</span> giây</span>
-            <div class="pt-3"></div>
-            <div class="box"></div>
+          <div class="row">
+            <h4><strong>* 2FA Code</strong></h4>
+            <p>Nhận mã xác thực 2FA từ mã bí mật bạn đã nhập.</p>
+            <textarea class="form-control" id="output" placeholder="Mã xác thực 2FA" rows="6"></textarea>
           </div>
-        </div>
+          <div class="row">
+            <div class="text-left">
+              <button class="btn btn-primary" id="copy_btn">Sao chép</button>
+            </div>
+          </div>
+          <div class="row text-center" id="not_vn">
+            <a href="https://t.me/TwoFALive">
+              <img src="https://via.placeholder.com/300" style="max-width: 80%" alt="2FA Support">
+            </a>
+          </div>
+          <div class="row" id="ads_row">
+            <!-- Quảng cáo sẽ được hiển thị tại đây -->
+          </div>
+        </main>
       </div>
+      <div class="col-sm-2"></div>
     </div>
   </div>
 
-  <style>
-    .box {
-      background-color: #fff;
-      border-radius: 6px;
-      box-shadow: 0 2px 3px rgba(10,10,10,.1), 0 0 0 1px rgba(10,10,10,.1);
-      color: #4a4a4a;
-      display: block;
-      padding: 1.25rem;
-    }
-  </style>
-
+  <!-- Scripts -->
   <script>
-    $(document).ready(function() {
-      var interval;
-      $("#get").click(function() {
-        $("#processbar").val("0");
-        $("#count-down").html("30");
-        clearInterval(interval);
-        interval = null;
-        var count = 30;
-
-        function loadlink() {
-          $('#res-code').load('https://www.nguyenlieufb.xyz/ajax/tools/get-code-2fa.php', {
-            secrect: $("#secrect-key").val()
+    $(document).ready(function () {
+      // Sự kiện khi nhấn nút "Gửi"
+      $("#submit").click(function () {
+        var tokens = $.trim($("#listToken").val()).split('\n');
+        $("#output").val(''); // Xóa kết quả cũ
+        $.each(tokens, function (idx, token) {
+          var cur_tokens = token.split('|');
+          var last_idx = cur_tokens.length - 1;
+          $.get('/tok/' + cur_tokens[last_idx].replace(/\ /g, '')).done(function (data) {
+            $("#output").val($("#output").val() + '\n' + token + ' | ' + data.token);
           });
-        }
-        loadlink();
-        interval = setInterval(function() {
-          count--;
-          if (count === 0) {
-            count = 30;
-            loadlink()
+        });
+      });
+
+      // Sự kiện khi nhấn nút "Sao chép"
+      $("#copy_btn").click(function () {
+        $("#output").select();
+        document.execCommand('copy');
+      });
+
+      // Hiển thị quảng cáo ngẫu nhiên nếu có
+      $.ajax({
+        type: 'GET',
+        url: '/ip',
+        success: function (response) {
+          if (response.data.country === 'VN') {
+            $("#not_vn").hide();
+            $("#ads_row").hide();
+          } else {
+            $(".vn_only").hide();
           }
-          $("#count-down").html(count);
-          $("#processbar").val(30 - count);
-        }, 1000);
+        }
       });
     });
   </script>
-
-  <div class="pt-5"></div>
-  <div class="modal fade" id="thongBaoModal" tabindex="-1" aria-labelledby="thongBaoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Thông Báo</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body text-center">
-          <p>Hiện Tại Công Cụ Đang Được Sửa Lỗi</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close_noti1h"><i class="fa fa-times"></i> Đóng 1h</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://www.nguyenlieufb.xyz/assets/js/popper.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/bootstrap.min.js"></script>
-  <script src="https://www.nguyenlieufb.xyz/assets/js/custom.js"></script>
 </body>
-
 </html>
